@@ -2,6 +2,7 @@ import sys
 import os
 import random
 
+
 # Get the current directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -161,7 +162,13 @@ def main(argv):
                     current_date = datetime.datetime.now().strftime(TIME_STRING_FORMAT)
 
                     ## TODO: Create response headers
-                    headers_to_send = []
+                    headers_to_send = [
+                        "HTCPCP/1.1 200 OK\r\n",
+                        "Server: CoffeePot\r\n",
+                        "Content-Type: message/coffeepot\r\n",
+                        f"Date: {current_date}\r\n",
+                        "\r\n",
+                    ]
 
                     response = create_request_response(
                         method, message, additions, pour_milk_start
@@ -175,7 +182,13 @@ def main(argv):
                     # TODO: Handle other cases that passes ensure_request_is_valid but isn't supported
                     # if we reach here, request is valid, but the server doesn't support this feature
                     # e.g: 406
-                    final_response = ""
+                    final_response = (
+                        "HTCPCP/1.1 406 Not Acceptable\r\n"
+                        "Server: CoffeePot\r\n"
+                        "Content-Type: message/coffeepot\r\n"
+                        f"Date: {current_date}\r\n"
+                        f"Body: {list(ACCEPTED_ADDITIONS.keys())}\r\n"
+                    )
 
                 connection.send(bytes(final_response.encode("utf-8")))
                 print(f"\n\nHTCPCP Response Crafted:\n{final_response}")
@@ -218,6 +231,7 @@ def ensure_request_is_valid(
 
     For each case 1 to 5 above, call send_error_message(error_message) with an appropriately crafted error message containing status code and reason-phrase. The arg not_found_message gives you a general idea of the format of the expected error message conforming to HTCPCP/1.0 protocol.
     """
+
     return True
 
 
