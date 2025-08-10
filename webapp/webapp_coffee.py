@@ -84,9 +84,7 @@ def index():
         ):
             message = "BREW coffee://ducky HTTP/1.1\r\nContent-Type: application/coffee-pot-command"
             if additions:
-                message = (
-                    message + "\r\nAccept-Additions: " + "; ".join(additions)
-                )
+                message = message + "\r\nAccept-Additions: " + "; ".join(additions)
             if pots:
                 message = message + "\r\nUse-Pot: " + "; ".join(pots)
             message = message + "\r\n\r\n" + message_for_server
@@ -119,7 +117,7 @@ def connect_to_server(message):
         f"\n=======================\nReceived data from server at {now}:\n{data}",
     )
     data = data.decode()
-    return data  
+    return data
 
 
 def handle_when_brew_post(message):
@@ -129,36 +127,36 @@ def handle_when_brew_post(message):
 
     # filter other error reply cases
     status, response = check_response_status(data)
-    if (status != 200):
+    if status != 200:
         return craft_error_template(status, response)
 
     return redirect("/")
 
 
 def handle_homepage_render():
-    data = connect_to_server("GET coffee://ducky HTTP/1.1\r\nContent-Type: application/coffee-pot-command\r\n\r\n")
+    data = connect_to_server(
+        "GET coffee://ducky HTTP/1.1\r\nContent-Type: application/coffee-pot-command\r\n\r\n"
+    )
 
     brewing = False
     additions = ""
     contains_milk = False
     brew_time = ""
     brew_time_end = ""
-    pour_milk_start = "" 
+    pour_milk_start = ""
     finish_brewing_unix = 0
     pour_milk_stop = False
 
     status, response = check_response_status(data)
-    if (status != 200):
+    if status != 200:
         return craft_error_template(status, response)
-    
+
     if data and data.strip():
         response = data.split("\r\n")
         if response[-1].strip() != "{}" and response[-1].strip() != "":
             brewing = True
 
-            brewing_description = json.loads(
-                response[-1].strip().replace("'", '"')
-            )
+            brewing_description = json.loads(response[-1].strip().replace("'", '"'))
 
             additions = brewing_description["additions"]
 
@@ -192,7 +190,7 @@ def handle_homepage_render():
                     pour_milk_start = ""
 
                 # check if we have stopped pouring milk
-                pour_milk_stop = brewing_description.get("pour_milk_stop", False) 
+                pour_milk_stop = brewing_description.get("pour_milk_stop", False)
 
     additions = [addition.strip(" ") for addition in additions]
 
@@ -215,7 +213,7 @@ def handle_homepage_render():
 
 
 def handle_coffee_data(message):
-    data = connect_to_server(message) 
+    data = connect_to_server(message)
     response = data.split("\r\n")
 
     # get the coffee profile response
@@ -251,62 +249,68 @@ def coffeepot_log():
         coffees_brewed_count=coffees_brewed_count,
     )
 
+
 def check_response_status(data):
-    status = 0 
+    status = 0
     response = ""
     if data and data.strip():
         response = data.split("\r\n")
-        try:               
+        try:
             status = int(response[0].split()[1])
         except:
-            print("The string does not represent an integer.") 
+            print("The string does not represent an integer.")
     return status, response
+
 
 def craft_error_template(status, response):
     if status == 418:
         print("TEAPOT")
-        return render_template(
-            ERROR_TEMPLATE, title="I'm a Teapot!", error=status
-        )
+        return render_template(ERROR_TEMPLATE, title="I'm a Teapot!", error=status)
     elif status == 406:
-        return render_template(
-            ERROR_TEMPLATE, title="Not Acceptable", error=status
-        )
+        return render_template(ERROR_TEMPLATE, title="Not Acceptable", error=status)
     elif status != 200:
-        return render_template(
-            ERROR_TEMPLATE, title=" ".join(response), error=status
-        )  
+        return render_template(ERROR_TEMPLATE, title=" ".join(response), error=status)
     else:
-        return render_template(
-                ERROR_TEMPLATE, title="Other error has occured", error=0
-            )   
-    
+        return render_template(ERROR_TEMPLATE, title="Other error has occured", error=0)
+
+
 @app.route("/test-400")
 def test_400():
-    data = connect_to_server("GET caffeine://ducky HTTP/1.1\r\nContent-Type: application/coffee-pot-command\r\n\r\n")
+    data = connect_to_server(
+        "GET caffeine://ducky HTTP/1.1\r\nContent-Type: application/coffee-pot-command\r\n\r\n"
+    )
     status, response = check_response_status(data)
     return craft_error_template(status, response)
+
 
 @app.route("/test-404")
 def test_404():
-    data = connect_to_server("GET coffee://psyduck HTTP/1.1\r\nContent-Type: application/coffee-pot-command\r\n\r\n")
+    data = connect_to_server(
+        "GET coffee://psyduck HTTP/1.1\r\nContent-Type: application/coffee-pot-command\r\n\r\n"
+    )
     status, response = check_response_status(data)
     return craft_error_template(status, response)
+
 
 @app.route("/test-501")
 def test_501():
-    data = connect_to_server("MILK coffee://ducky HTTP/1.1\r\nContent-Type: application/coffee-pot-command\r\n\r\n")
+    data = connect_to_server(
+        "MILK coffee://ducky HTTP/1.1\r\nContent-Type: application/coffee-pot-command\r\n\r\n"
+    )
     status, response = check_response_status(data)
     return craft_error_template(status, response)
+
 
 @app.route("/test-415")
 def test_415():
-    data = connect_to_server("GET coffee://ducky HTTP/1.1\r\nContent-Type: application/tea-pot-command\r\n\r\n")
+    data = connect_to_server(
+        "GET coffee://ducky HTTP/1.1\r\nContent-Type: application/tea-pot-command\r\n\r\n"
+    )
     status, response = check_response_status(data)
     return craft_error_template(status, response)
 
 
-## HTTP error handling      
+## HTTP error handling
 @app.errorhandler(404)
 def page_not_found(e):
     return (
@@ -359,6 +363,4 @@ if __name__ == "__main__":
     if "-local" in sys.argv:
         host = LOCALHOST
 
-    app.run(
-        debug=True, ssl_context=ssl_context, host=host, port=WEBSERVER_PORT
-    )
+    app.run(debug=True, ssl_context=ssl_context, host=host, port=WEBSERVER_PORT)
