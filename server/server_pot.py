@@ -182,7 +182,7 @@ def main(argv):
                     # TODO: Handle other cases that passes ensure_request_is_valid but isn't supported
                     # if we reach here, request is valid, but the server doesn't support this feature
                     # e.g: 406
-                    listOfAccepted = list(ACCEPTED_ADDITIONS.keys())
+                    listOfAccepted = str(list(ACCEPTED_ADDITIONS.keys()))
                     final_response = (
                         "HTCPCP/1.1 406 Not Acceptable\r\n"
                         "Server: Coffeepot\r\n"
@@ -191,8 +191,14 @@ def main(argv):
                         "\r\n" + listOfAccepted
                     )
 
-                connection.send(bytes(final_response.encode("utf-8")))
-                print(f"\n\nHTCPCP Response Crafted:\n{final_response}")
+                    try:
+                        connection.send(bytes(final_response, "utf-8"))
+                        print(f"Response sent successfully!")
+                    except BrokenPipeError:
+                        print(f"Client disconnected before response could be sent")
+                    except Exception as e:
+                        print(f"Error sending response to client: {e}")
+                    print(f"\n\nHTCPCP Response Crafted:\n{final_response}")
 
             processing_request = False
 
@@ -234,35 +240,61 @@ def ensure_request_is_valid(
     """
 
     # Case 1: Validate scheme
-    if url not in accepted_coffee_schemes:
+    if url.split("://")[0] not in accepted_coffee_schemes:
         send_error_message(
-            connection, "HTCPCP/1.1 406 Not Acceptable\r\n\r\nUnacceptable scheme"
+            connection,
+            "HTCPCP/1.1 406 Not Acceptable\r\n\r\nUnacceptable scheme".encode("utf-8"),
         )
+        return False
 
     # Case 2: Check for correct URL path format
-    if not url.startswith("/"):
+    try:
+        if "://" not in url:
+            send_error_message(
+                connection,
+                "HTCPCP/1.1 400 Bad Request\r\n\r\nInvalid URL format. Expected scheme://hostname".encode(
+                    "utf-8"
+                ),
+            )
+            return False
+        hostName = url.split("://")[1]
+        if hostName != HOSTNAME:
+            send_error_message(connection, not_found_message)
+            return False
+    except IndexError:
         send_error_message(
-            "HTCPCP/1.1 400 Bad Request\r\n\r\nInvalid URL path. Must start with '/'."
+            connection,
+            "HTCPCP/1.1 400 Bad Request\r\n\r\nInvalid URL format".encode("utf-8"),
         )
+        return False
 
     # Case 3: Validate HTTP method
     if method.upper() not in accepted_methods:
         send_error_message(
             connection,
-            f"HTCPCP/1.1 405 Method Not Allowed\r\n\r\nInvalid Method. Accepted methods are:\n{accepted_methods}",
+            f"HTCPCP/1.1 405 Method Not Allowed\r\n\r\nInvalid Method. Accepted methods are:\n{accepted_methods}".encode(
+                "utf-8"
+            ),
         )
+        return False
 
     # Case 4: Check the content type format
     filteredContentType = content_type[0].split(":")[1].strip()
     if filteredContentType.lower() != "application/coffee-pot-command":
         send_error_message(
             connection,
-            "HTCPCP/1.1 415 Unsupported Media Type\r\n\r\nInvalid Content Type.",
+            "HTCPCP/1.1 415 Unsupported Media Type\r\n\r\nInvalid Content Type.".encode(
+                "utf-8"
+            ),
         )
+        return False
 
     # Case 5: Specific check for "tea" pot request
     if "tea" in requested_pot.lower():
-        send_error_message(connection, "HTCPCP/1.1 418 I'm a teapot\r\n\r\n")
+        send_error_message(
+            connection, "HTCPCP/1.1 418 I'm a teapot\r\n\r\n".encode("utf-8")
+        )
+        return False
 
     return True
 
