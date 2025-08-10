@@ -162,9 +162,6 @@ def main(argv):
                     current_date = datetime.datetime.now().strftime(TIME_STRING_FORMAT)
 
                     ## TODO: Create response headers
-<<<<<<< Updated upstream
-                    headers_to_send = []
-=======
                     headers_to_send = [
                         "HTCPCP/1.1 200 OK\r\n",
                         "Server: CoffeePot\r\n",
@@ -172,7 +169,6 @@ def main(argv):
                         f"Date: {current_date}\r\n",
                         "\r\n",
                     ]
->>>>>>> Stashed changes
 
                     response = create_request_response(
                         method, message, additions, pour_milk_start
@@ -186,9 +182,6 @@ def main(argv):
                     # TODO: Handle other cases that passes ensure_request_is_valid but isn't supported
                     # if we reach here, request is valid, but the server doesn't support this feature
                     # e.g: 406
-<<<<<<< Updated upstream
-                    final_response = ""
-=======
                     listOfAccepted = list(ACCEPTED_ADDITIONS.keys())
                     final_response = (
                         "HTCPCP/1.1 406 Not Acceptable\r\n"
@@ -197,7 +190,6 @@ def main(argv):
                         f"Date: {current_date}\r\n"
                         "\r\n" + listOfAccepted
                     )
->>>>>>> Stashed changes
 
                 connection.send(bytes(final_response.encode("utf-8")))
                 print(f"\n\nHTCPCP Response Crafted:\n{final_response}")
