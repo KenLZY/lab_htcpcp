@@ -162,6 +162,9 @@ def main(argv):
                     current_date = datetime.datetime.now().strftime(TIME_STRING_FORMAT)
 
                     ## TODO: Create response headers
+<<<<<<< Updated upstream
+                    headers_to_send = []
+=======
                     headers_to_send = [
                         "HTCPCP/1.1 200 OK\r\n",
                         "Server: CoffeePot\r\n",
@@ -169,6 +172,7 @@ def main(argv):
                         f"Date: {current_date}\r\n",
                         "\r\n",
                     ]
+>>>>>>> Stashed changes
 
                     response = create_request_response(
                         method, message, additions, pour_milk_start
@@ -182,13 +186,18 @@ def main(argv):
                     # TODO: Handle other cases that passes ensure_request_is_valid but isn't supported
                     # if we reach here, request is valid, but the server doesn't support this feature
                     # e.g: 406
+<<<<<<< Updated upstream
+                    final_response = ""
+=======
+                    listOfAccepted = list(ACCEPTED_ADDITIONS.keys())
                     final_response = (
                         "HTCPCP/1.1 406 Not Acceptable\r\n"
-                        "Server: CoffeePot\r\n"
-                        "Content-Type: message/coffeepot\r\n"
+                        "Server: Coffeepot\r\n"
+                        "Content-Type: text/plain\r\n"
                         f"Date: {current_date}\r\n"
-                        f"Body: {list(ACCEPTED_ADDITIONS.keys())}\r\n"
+                        "\r\n" + listOfAccepted
                     )
+>>>>>>> Stashed changes
 
                 connection.send(bytes(final_response.encode("utf-8")))
                 print(f"\n\nHTCPCP Response Crafted:\n{final_response}")
@@ -231,6 +240,37 @@ def ensure_request_is_valid(
 
     For each case 1 to 5 above, call send_error_message(error_message) with an appropriately crafted error message containing status code and reason-phrase. The arg not_found_message gives you a general idea of the format of the expected error message conforming to HTCPCP/1.0 protocol.
     """
+
+    # Case 1: Validate scheme
+    if url not in accepted_coffee_schemes:
+        send_error_message(
+            connection, "HTCPCP/1.1 406 Not Acceptable\r\n\r\nUnacceptable scheme"
+        )
+
+    # Case 2: Check for correct URL path format
+    if not url.startswith("/"):
+        send_error_message(
+            "HTCPCP/1.1 400 Bad Request\r\n\r\nInvalid URL path. Must start with '/'."
+        )
+
+    # Case 3: Validate HTTP method
+    if method.upper() not in accepted_methods:
+        send_error_message(
+            connection,
+            f"HTCPCP/1.1 405 Method Not Allowed\r\n\r\nInvalid Method. Accepted methods are:\n{accepted_methods}",
+        )
+
+    # Case 4: Check the content type format
+    filteredContentType = content_type[0].split(":")[1].strip()
+    if filteredContentType.lower() != "application/coffee-pot-command":
+        send_error_message(
+            connection,
+            "HTCPCP/1.1 415 Unsupported Media Type\r\n\r\nInvalid Content Type.",
+        )
+
+    # Case 5: Specific check for "tea" pot request
+    if "tea" in requested_pot.lower():
+        send_error_message(connection, "HTCPCP/1.1 418 I'm a teapot\r\n\r\n")
 
     return True
 
